@@ -1,0 +1,19 @@
+{
+  "name": "runtipi-subdomains",
+  "scripts": {
+    "dev": "bun run --hot src/index.ts"
+  },
+  "dependencies": {
+    "cloudflare": "^3.5.0",
+    "hono": "^4.6.3",
+    "range_check": "^3.2.0",
+    "uuid": "^10.0.0",
+    "winston": "^3.14.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/range_check": "^1.4.2",
+    "@types/uuid": "^10.0.0"
+  }
+}
