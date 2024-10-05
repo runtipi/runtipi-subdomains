@@ -2,6 +2,7 @@ import type { ICloudflareHelpers } from "./cloudflare.helpers";
 import { generate } from "random-words";
 import { inject, injectable } from "inversify";
 import { ContainerTypes } from "../types/types";
+import { forbiddenRecords } from "../constants/constats";
 
 export interface IRouteHelpers {
   CreateRecords(internalIp: string): Promise<{
@@ -62,6 +63,16 @@ export class RouteHelpers implements IRouteHelpers {
 
     const recordWildcard = `*.${record}`;
 
+    if (
+      forbiddenRecords.includes(record) ||
+      forbiddenRecords.includes(recordWildcard)
+    ) {
+      return {
+        success: false,
+        message: "Cannot edit records",
+      };
+    }
+
     if (!this.cfHelper.CheckRecordExists(record)) {
       return {
         success: false,
@@ -101,6 +112,16 @@ export class RouteHelpers implements IRouteHelpers {
     }
 
     const recordWildcard = `*.${record}`;
+
+    if (
+      forbiddenRecords.includes(record) ||
+      forbiddenRecords.includes(recordWildcard)
+    ) {
+      return {
+        success: false,
+        message: "Cannot delete records",
+      };
+    }
 
     if (!this.cfHelper.CheckRecordExists(record)) {
       return {

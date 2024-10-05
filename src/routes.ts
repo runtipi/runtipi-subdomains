@@ -26,8 +26,6 @@ export const setupRoutes = (app: Hono, routerHelpers: RouteHelpers) => {
       return c.json({ error: "Invalid IP" }, 400);
     }
 
-    logger.info("Creating record");
-
     return c.json(
       await routerHelpers.CreateRecords(parsedBody.data.internalIp),
     );
@@ -52,8 +50,6 @@ export const setupRoutes = (app: Hono, routerHelpers: RouteHelpers) => {
       return c.json({ error: "Invalid IP" }, 400);
     }
 
-    logger.info("Editing record");
-
     return c.json(
       await routerHelpers.EditRecord(
         parsedBody.data.name,
@@ -69,11 +65,11 @@ export const setupRoutes = (app: Hono, routerHelpers: RouteHelpers) => {
 
     const parsedBody = await deleteSchema.safeParseAsync(bodyJson);
 
+    logger.info("Validating body");
+
     if (parsedBody.error) {
       return c.json({ error: "Invalid input" }, 400);
     }
-
-    logger.info("Deleting record");
 
     return c.json(await routerHelpers.DeleteRecord(parsedBody.data.name));
   });
