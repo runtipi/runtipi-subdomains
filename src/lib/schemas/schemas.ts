@@ -1,5 +1,5 @@
-import { z } from 'zod';
+import { z } from "zod";
 
-export const newSchema = z.object({
+export const createSchema = z.object({
   internalIp: z.string(),
 });

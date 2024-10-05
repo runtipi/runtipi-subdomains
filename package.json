@@ -1,19 +1,25 @@
 {
   "name": "runtipi-subdomains",
   "scripts": {
-    "dev": "bun run --hot src/index.ts"
+    "dev": "bun run --hot src/index.ts",
+    "start": "bun run src/index.ts"
   },
   "dependencies": {
+    "acme-client": "^5.4.0",
     "cloudflare": "^3.5.0",
     "hono": "^4.6.3",
+    "inversify": "^6.0.2",
+    "random-words": "^2.0.1",
     "range_check": "^3.2.0",
-    "uuid": "^10.0.0",
+    "reflect-metadata": "^0.2.2",
     "winston": "^3.14.2",
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/acme-client": "^3.3.0",
     "@types/bun": "latest",
     "@types/range_check": "^1.4.2",
-    "@types/uuid": "^10.0.0"
+    "@types/uuid": "^10.0.0",
+    "prettier": "3.3.3"
   }
 }
