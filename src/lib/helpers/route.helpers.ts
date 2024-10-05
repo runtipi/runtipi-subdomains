@@ -39,6 +39,8 @@ export class RouteHelpers implements IRouteHelpers {
     const record = `${name}.${baseDomain}`;
     const recordWildcard = `*.${record}`;
 
+    logger.info("Checking records");
+
     if (
       !(await this.cfHelper.CheckRecordExists(record)) &&
       !(await this.cfHelper.CheckRecordExists(recordWildcard))
@@ -91,6 +93,8 @@ export class RouteHelpers implements IRouteHelpers {
 
     const recordWildcard = `*.${record}`;
 
+    logger.info("Checking records");
+
     if (
       forbiddenRecords.includes(record) ||
       forbiddenRecords.includes(recordWildcard)
@@ -114,6 +118,8 @@ export class RouteHelpers implements IRouteHelpers {
         message: `Record ${recordWildcard} not found`,
       };
     }
+
+    logger.info("Editing records");
 
     if (!(await this.cfHelper.EditARecord(record, internalIp)).success) {
       return {
@@ -141,6 +147,8 @@ export class RouteHelpers implements IRouteHelpers {
 
     const recordWildcard = `*.${record}`;
 
+    logger.info("Checking records");
+
     if (
       forbiddenRecords.includes(record) ||
       forbiddenRecords.includes(recordWildcard)
@@ -157,6 +165,8 @@ export class RouteHelpers implements IRouteHelpers {
         message: "Records not found",
       };
     }
+
+    logger.info("Deleting records");
 
     await this.cfHelper.DeleteRecord(record);
     await this.cfHelper.DeleteRecord(recordWildcard);
