@@ -5,7 +5,7 @@ import { environment } from "./lib/env/env";
 import { Hono } from "hono";
 import { RouteHelpers } from "./lib/helpers/route.helpers";
 import { CreateContainer } from "./inversify.config";
-import { TYPES } from "./lib/types/types";
+import { ContainerTypes } from "./lib/types/types";
 
 const cf = new Cloudflare({ apiToken: environment.cfToken });
 
@@ -13,7 +13,7 @@ const app = new Hono().basePath("/api");
 
 const container = CreateContainer(cf);
 
-const routerHelpers = container.get<RouteHelpers>(TYPES.RouteHelpers);
+const routerHelpers = container.get<RouteHelpers>(ContainerTypes.RouteHelpers);
 
 setupRoutes(app, routerHelpers);
 
