@@ -10,7 +10,7 @@ export interface IAcmeHelpers {
   DNSChallenge(domain: string): Promise<{
     success: boolean;
     message: string;
-    data: { cert: string; key: Buffer; expiration: number };
+    data: { cert: string; key: string; expiration: number };
   }>;
 }
 
@@ -28,7 +28,7 @@ export class AcmeHelpers implements IAcmeHelpers {
 
   public async DNSChallenge(domain: string) {
     try {
-      logger.info("Initializing...");
+      logger.info("Initializing ACME...");
 
       const client = new acme.Client({
         directoryUrl: acme.directory.letsencrypt.production,
@@ -47,6 +47,7 @@ export class AcmeHelpers implements IAcmeHelpers {
       const cert = await client.auto({
         csr,
         challengePriority: ["dns-01"],
+        skipChallengeVerification: true,
         challengeCreateFn: async (authz, challenge, keyAuthorization) => {
           logger.info("Creating TXT record");
           if (
@@ -78,13 +79,13 @@ export class AcmeHelpers implements IAcmeHelpers {
       return {
         success: true,
         message: "Certificate created",
-        data: { cert, key, expiration: date.getTime() },
+        data: { cert, key: String(key), expiration: date.getTime() },
       };
     } catch (e) {
       return {
         success: false,
         message: String(e),
-        data: { cert: "", key: Buffer.from(""), expiration: 0 },
+        data: { cert: "", key: "", expiration: 0 },
       };
     }
   }

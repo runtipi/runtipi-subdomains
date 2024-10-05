@@ -4,6 +4,7 @@ import { inject, injectable } from "inversify";
 import { ContainerTypes } from "../types/types";
 import { forbiddenRecords } from "../constants/constats";
 import type { IAcmeHelpers } from "./acme.helpers";
+import { logger } from "../utils/logger";
 
 export interface IRouteHelpers {
   CreateRecords(internalIp: string): Promise<{
@@ -42,6 +43,8 @@ export class RouteHelpers implements IRouteHelpers {
       !(await this.cfHelper.CheckRecordExists(record)) &&
       !(await this.cfHelper.CheckRecordExists(recordWildcard))
     ) {
+      logger.info("Creating records");
+
       await this.cfHelper.CreateARecord(record, internalIp);
       await this.cfHelper.CreateARecord(recordWildcard, internalIp);
 
@@ -59,6 +62,8 @@ export class RouteHelpers implements IRouteHelpers {
           },
         };
       }
+
+      logger.info("Records created");
 
       return {
         success: true,
