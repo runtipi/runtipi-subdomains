@@ -3,6 +3,7 @@ import { generate } from "random-words";
 import { inject, injectable } from "inversify";
 import { ContainerTypes } from "../types/types";
 import { forbiddenRecords } from "../constants/constats";
+import type { IAcmeHelpers } from "./acme.helpers";
 
 export interface IRouteHelpers {
   CreateRecords(internalIp: string): Promise<{
@@ -28,6 +29,7 @@ export class RouteHelpers implements IRouteHelpers {
   constructor(
     @inject(ContainerTypes.CloudflareHelpers)
     private cfHelper: ICloudflareHelpers,
+    @inject(ContainerTypes.AcmeHelpers) private acmeHelper: IAcmeHelpers,
   ) {}
 
   public async CreateRecords(internalIp: string) {
@@ -42,10 +44,31 @@ export class RouteHelpers implements IRouteHelpers {
     ) {
       await this.cfHelper.CreateARecord(record, internalIp);
       await this.cfHelper.CreateARecord(recordWildcard, internalIp);
+
+      const cert = await this.acmeHelper.DNSChallenge(record);
+
+      if (!cert.success) {
+        return {
+          success: false,
+          message: "Failed to create certificate",
+          data: {
+            subdomain: record,
+            cert: "",
+            key: Buffer.from(""),
+            expiration: 0,
+          },
+        };
+      }
+
       return {
         success: true,
         message: "Records created",
-        data: { subdomain: record },
+        data: {
+          subdomain: record,
+          cert: cert.data.cert,
+          key: cert.data.key,
+          expiration: cert.data.expiration,
+        },
       };
     }
 

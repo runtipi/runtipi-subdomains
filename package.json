@@ -2,7 +2,8 @@
   "name": "runtipi-subdomains",
   "scripts": {
     "dev": "bun run --hot src/index.ts",
-    "start": "bun run src/index.ts"
+    "start": "bun run src/index.ts",
+    "create-account": "bun run tools/createAcmeAccount.ts"
   },
   "dependencies": {
     "acme-client": "^5.4.0",

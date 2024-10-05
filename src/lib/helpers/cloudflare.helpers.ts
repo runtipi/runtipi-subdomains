@@ -1,6 +1,6 @@
 import type Cloudflare from "cloudflare";
-import { environment } from "../env/env";
 import { injectable } from "inversify";
+import type { ConfigSchema } from "../schemas/schemas";
 
 export interface ICloudflareHelpers {
   GetDomain(): Promise<string>;
@@ -18,25 +18,29 @@ export interface ICloudflareHelpers {
 @injectable()
 export class CloudlfareHelpers implements ICloudflareHelpers {
   private cf: Cloudflare;
+  private config: ConfigSchema;
 
-  constructor(cf: Cloudflare) {
+  constructor(cf: Cloudflare, config: ConfigSchema) {
     this.cf = cf;
+    this.config = config;
   }
 
   public async GetDomain() {
-    const zone = await this.cf.zones.get({ zone_id: environment.cfZoneId });
+    const zone = await this.cf.zones.get({
+      zone_id: this.config.cloudflare.zoneId,
+    });
     return zone.name;
   }
 
   public async DeleteRecord(name: string) {
     const records = await this.cf.dns.records.list({
-      zone_id: environment.cfZoneId,
+      zone_id: this.config.cloudflare.zoneId,
     });
     for (const record of records.result) {
       if (record.name == name) {
         if (record.id) {
           await this.cf.dns.records.delete(record.id, {
-            zone_id: environment.cfZoneId,
+            zone_id: this.config.cloudflare.zoneId,
           });
         }
       }
@@ -45,7 +49,7 @@ export class CloudlfareHelpers implements ICloudflareHelpers {
 
   public async CreateTXTRecord(name: string, value: string) {
     await this.cf.dns.records.create({
-      zone_id: environment.cfZoneId,
+      zone_id: this.config.cloudflare.zoneId,
       name: name,
       type: "TXT",
       content: value,
@@ -54,7 +58,7 @@ export class CloudlfareHelpers implements ICloudflareHelpers {
 
   public async CreateARecord(name: string, value: string) {
     await this.cf.dns.records.create({
-      zone_id: environment.cfZoneId,
+      zone_id: this.config.cloudflare.zoneId,
       name: name,
       type: "A",
       content: value,
@@ -63,7 +67,7 @@ export class CloudlfareHelpers implements ICloudflareHelpers {
 
   public async CheckRecordExists(name: string) {
     const records = await this.cf.dns.records.list({
-      zone_id: environment.cfZoneId,
+      zone_id: this.config.cloudflare.zoneId,
     });
     for (const record of records.result) {
       if (record.name === name) {
@@ -75,7 +79,7 @@ export class CloudlfareHelpers implements ICloudflareHelpers {
 
   public async GetRecordId(name: string) {
     const records = await this.cf.dns.records.list({
-      zone_id: environment.cfZoneId,
+      zone_id: this.config.cloudflare.zoneId,
     });
     for (const record of records.result) {
       if (record.name === name) {
@@ -93,7 +97,7 @@ export class CloudlfareHelpers implements ICloudflareHelpers {
     }
     const id = await this.GetRecordId(name);
     await this.cf.dns.records.edit(id, {
-      zone_id: environment.cfZoneId,
+      zone_id: this.config.cloudflare.zoneId,
       name: name,
       type: "A",
       content: value,

@@ -1,17 +1,22 @@
 import Cloudflare from "cloudflare";
 import { logger } from "./lib/utils/logger";
 import { setupRoutes } from "./routes";
-import { environment } from "./lib/env/env";
 import { Hono } from "hono";
 import { RouteHelpers } from "./lib/helpers/route.helpers";
 import { CreateContainer } from "./inversify.config";
 import { ContainerTypes } from "./lib/types/types";
+import { AcmeHelpers } from "./lib/helpers/acme.helpers";
+import { Config } from "./lib/config/config";
 
-const cf = new Cloudflare({ apiToken: environment.cfToken });
+const config = new Config().getConfig();
+
+const cf = new Cloudflare({ apiToken: config.cloudflare.apiToken });
+
+const container = CreateContainer(cf, config);
+
+const acme = container.get<AcmeHelpers>(ContainerTypes.AcmeHelpers);
 
 const app = new Hono().basePath("/api");
-
-const container = CreateContainer(cf);
 
 const routerHelpers = container.get<RouteHelpers>(ContainerTypes.RouteHelpers);
 

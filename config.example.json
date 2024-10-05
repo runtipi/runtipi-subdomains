@@ -1,0 +1,10 @@
+{
+  "cloudflare": {
+    "zoneId": "some-zone-id",
+    "apiToken": "some-api-token"
+  },
+  "acme": {
+    "accountUrl": "some-account-url",
+    "accountKey": "some-private-key-use-private-key-to-json-script"
+  }
+}
