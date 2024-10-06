@@ -67,6 +67,7 @@ export class RouteHelpers implements IRouteHelpers {
       const cert = await this.acmeHelper.DNSChallenge(record);
 
       if (!cert.success) {
+        logger.error(`Failed to generate certs, error: ${cert.message}`);
         await this.cfHelper.DeleteRecord(record);
         await this.cfHelper.DeleteRecord(recordWildcard);
         return {
