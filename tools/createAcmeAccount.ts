@@ -13,7 +13,7 @@ async function createAcmeAccount() {
     contact: ["mailto:user@demo.runtipi.io"],
   });
 
-  console.log(`Account Key: ${accountKey.toJSON()}`);
+  console.log(`Account Key: ${JSON.stringify(String(accountKey))}`);
 
   console.log(`Account URL: ${client.getAccountUrl()}`);
 }
