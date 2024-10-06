@@ -5,21 +5,34 @@ import { ContainerTypes } from "../types/types";
 import { forbiddenRecords } from "../constants/constats";
 import type { IAcmeHelpers } from "./acme.helpers";
 import { logger } from "../utils/logger";
+import * as crypto from "crypto";
+import * as argon2 from "argon2";
+import type { ISubdomainQueries } from "../queries/subdomains/subdomains.queries";
 
 export interface IRouteHelpers {
   CreateRecords(internalIp: string): Promise<{
     success: boolean;
     message: string;
-    data: { subdomain: string };
+    data: {
+      subdomain: string;
+      cert: string;
+      key: string;
+      expiration: number;
+      token: string;
+    };
   }>;
   EditRecord(
     name: string,
     internalIp: string,
+    token: string,
   ): Promise<{
     success: boolean;
     message: string;
   }>;
-  DeleteRecord(name: string): Promise<{
+  DeleteRecord(
+    name: string,
+    token: string,
+  ): Promise<{
     success: boolean;
     message: string;
   }>;
@@ -31,6 +44,8 @@ export class RouteHelpers implements IRouteHelpers {
     @inject(ContainerTypes.CloudflareHelpers)
     private cfHelper: ICloudflareHelpers,
     @inject(ContainerTypes.AcmeHelpers) private acmeHelper: IAcmeHelpers,
+    @inject(ContainerTypes.SubdomainQueries)
+    private subdomainQueries: ISubdomainQueries,
   ) {}
 
   public async CreateRecords(internalIp: string) {
@@ -53,19 +68,37 @@ export class RouteHelpers implements IRouteHelpers {
       const cert = await this.acmeHelper.DNSChallenge(record);
 
       if (!cert.success) {
+        await this.cfHelper.DeleteRecord(record);
+        await this.cfHelper.DeleteRecord(recordWildcard);
         return {
           success: false,
           message: "Failed to create certificate",
           data: {
-            subdomain: record,
+            subdomain: "",
             cert: "",
-            key: Buffer.from(""),
+            key: "",
             expiration: 0,
+            token: "",
           },
         };
       }
 
       logger.info("Records created");
+
+      logger.info("Creating token");
+
+      const token = crypto.randomBytes(32).toString("hex");
+
+      logger.info("Token created");
+
+      logger.info("Adding to database");
+
+      await this.subdomainQueries.AddSubdomain(
+        record,
+        await argon2.hash(token),
+      );
+
+      logger.info("Added to database");
 
       return {
         success: true,
@@ -75,6 +108,7 @@ export class RouteHelpers implements IRouteHelpers {
           cert: cert.data.cert,
           key: cert.data.key,
           expiration: cert.data.expiration,
+          token: token,
         },
       };
     }
@@ -82,11 +116,17 @@ export class RouteHelpers implements IRouteHelpers {
     return {
       success: false,
       message: "Record already exists",
-      data: { subdomain: record },
+      data: {
+        subdomain: record,
+        cert: "",
+        key: "",
+        expiration: 0,
+        token: "",
+      },
     };
   }
 
-  public async EditRecord(record: string, internalIp: string) {
+  public async EditRecord(record: string, internalIp: string, token: string) {
     if (record.includes("*")) {
       record = record.replace("*.", "");
     }
@@ -119,6 +159,19 @@ export class RouteHelpers implements IRouteHelpers {
       };
     }
 
+    logger.info("Checking token");
+
+    const subdomain = await this.subdomainQueries.GetSubdomain(record);
+
+    if (!(await argon2.verify(subdomain.token, token))) {
+      return {
+        success: false,
+        message: "Invalid token",
+      };
+    }
+
+    logger.info("Token verified");
+
     logger.info("Editing records");
 
     if (!(await this.cfHelper.EditARecord(record, internalIp)).success) {
@@ -140,7 +193,7 @@ export class RouteHelpers implements IRouteHelpers {
     return { success: true, message: "Records edited" };
   }
 
-  public async DeleteRecord(record: string) {
+  public async DeleteRecord(record: string, token: string) {
     if (record.includes("*")) {
       record = record.replace("*.", "");
     }
@@ -165,6 +218,19 @@ export class RouteHelpers implements IRouteHelpers {
         message: "Records not found",
       };
     }
+
+    logger.info("Checking token");
+
+    const subdomain = await this.subdomainQueries.GetSubdomain(record);
+
+    if (!(await argon2.verify(subdomain.token, token))) {
+      return {
+        success: false,
+        message: "Invalid token",
+      };
+    }
+
+    logger.info("Token verified");
 
     logger.info("Deleting records");
 

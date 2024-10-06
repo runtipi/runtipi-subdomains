@@ -54,6 +54,7 @@ export const setupRoutes = (app: Hono, routerHelpers: RouteHelpers) => {
       await routerHelpers.EditRecord(
         parsedBody.data.name,
         parsedBody.data.internalIp,
+        parsedBody.data.token,
       ),
     );
   });
@@ -71,7 +72,12 @@ export const setupRoutes = (app: Hono, routerHelpers: RouteHelpers) => {
       return c.json({ error: "Invalid input" }, 400);
     }
 
-    return c.json(await routerHelpers.DeleteRecord(parsedBody.data.name));
+    return c.json(
+      await routerHelpers.DeleteRecord(
+        parsedBody.data.name,
+        parsedBody.data.token,
+      ),
+    );
   });
 
   app.notFound((c) => c.json({ error: "Not found" }, 404));

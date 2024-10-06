@@ -7,7 +7,9 @@
   },
   "dependencies": {
     "acme-client": "^5.4.0",
+    "argon2": "^0.41.1",
     "cloudflare": "^3.5.0",
+    "drizzle-orm": "^0.33.0",
     "hono": "^4.6.3",
     "inversify": "^6.0.2",
     "random-words": "^2.0.1",
@@ -18,9 +20,11 @@
   },
   "devDependencies": {
     "@types/acme-client": "^3.3.0",
+    "@types/argon2": "^0.15.0",
     "@types/bun": "latest",
     "@types/range_check": "^1.4.2",
     "@types/uuid": "^10.0.0",
+    "drizzle-kit": "^0.24.2",
     "prettier": "3.3.3"
   }
 }

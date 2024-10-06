@@ -5,22 +5,31 @@ import { Hono } from "hono";
 import { RouteHelpers } from "./lib/helpers/route.helpers";
 import { CreateContainer } from "./inversify.config";
 import { ContainerTypes } from "./lib/types/types";
-import { AcmeHelpers } from "./lib/helpers/acme.helpers";
 import { Config } from "./lib/config/config";
+import { migrate } from "drizzle-orm/bun-sqlite/migrator";
+import { db } from "./lib/db/db";
+
+logger.info("Migrating database");
+
+migrate(db, { migrationsFolder: "./src/migrations" });
+
+logger.info("Migrations completed");
+
+logger.info("Initializing");
 
 const config = new Config().getConfig();
 
 const cf = new Cloudflare({ apiToken: config.cloudflare.apiToken });
 
-const container = CreateContainer(cf, config);
-
-const acme = container.get<AcmeHelpers>(ContainerTypes.AcmeHelpers);
+const container = CreateContainer(cf, config, db);
 
 const app = new Hono().basePath("/api");
 
 const routerHelpers = container.get<RouteHelpers>(ContainerTypes.RouteHelpers);
 
 setupRoutes(app, routerHelpers);
+
+logger.info("Starting server");
 
 Bun.serve({ fetch: app.fetch, port: 3000 });
 
