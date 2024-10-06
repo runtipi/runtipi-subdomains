@@ -163,7 +163,10 @@ export class RouteHelpers implements IRouteHelpers {
 
     const subdomain = await this.subdomainQueries.GetSubdomain(record);
 
-    if (!(await argon2.verify(subdomain.token, token))) {
+    if (
+      subdomain?.tokenHash &&
+      !(await argon2.verify(subdomain.tokenHash, token))
+    ) {
       return {
         success: false,
         message: "Invalid token",
@@ -223,7 +226,10 @@ export class RouteHelpers implements IRouteHelpers {
 
     const subdomain = await this.subdomainQueries.GetSubdomain(record);
 
-    if (!(await argon2.verify(subdomain.token, token))) {
+    if (
+      subdomain?.tokenHash &&
+      !(await argon2.verify(subdomain.tokenHash, token))
+    ) {
       return {
         success: false,
         message: "Invalid token",

@@ -4,9 +4,14 @@ import * as schema from "../../db/schema";
 import { eq } from "drizzle-orm";
 
 export interface ISubdomainQueries {
-  GetSubdomain(name: string): Promise<any>;
-  AddSubdomain(subdomain: string, tokenHash: string): Promise<any>;
-  DeleteSubdomain(name: string): Promise<any>;
+  GetSubdomain(
+    name: string,
+  ): Promise<
+    | { id: number; subdomain: string | null; tokenHash: string | null }
+    | undefined
+  >;
+  AddSubdomain(subdomain: string, tokenHash: string): Promise<void>;
+  DeleteSubdomain(name: string): Promise<void>;
 }
 
 @injectable()
