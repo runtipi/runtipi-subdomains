@@ -17,12 +17,12 @@ export const deleteSchema = z.object({
 
 export const configSchema = z.object({
   cloudflare: z.object({
-    zoneId: z.string().length(32),
-    apiToken: z.string().length(40),
+    zoneId: z.string(),
+    apiToken: z.string(),
   }),
   acme: z.object({
-    accountUrl: z.string().length(57),
-    accountKey: z.string().length(1708),
+    accountUrl: z.string(),
+    accountKey: z.string(),
   }),
 });
 
