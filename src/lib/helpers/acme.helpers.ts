@@ -62,6 +62,8 @@ export class AcmeHelpers implements IAcmeHelpers {
             `_acme-challenge.${authz.identifier.value}`,
             keyAuthorization,
           );
+          // Wait a bit for DNS to propagate
+          await new Promise((r) => setTimeout(r, 5000));
         },
         challengeRemoveFn: async (authz, challenge, keyAuthorization) => {
           logger.info("Removing TXT record");
