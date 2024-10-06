@@ -6,12 +6,18 @@ export class Config {
   public getConfig() {
     logger.info("Reading config");
 
-    if (!fs.existsSync("config.json")) {
+    var configPath = "config.json";
+
+    if (process.env.NODE_ENV === "production") {
+      configPath = "/data/config.json";
+    }
+
+    if (!fs.existsSync(configPath)) {
       logger.error("Config file not found");
       process.exit(1);
     }
 
-    const config = fs.readFileSync("config.json", "utf-8");
+    const config = fs.readFileSync(configPath, "utf-8");
 
     var configJSON;
 

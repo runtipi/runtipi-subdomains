@@ -6,7 +6,6 @@ import { forbiddenRecords } from "../constants/constats";
 import type { IAcmeHelpers } from "./acme.helpers";
 import { logger } from "../utils/logger";
 import * as crypto from "crypto";
-import * as argon2 from "argon2";
 import type { ISubdomainQueries } from "../queries/subdomains/subdomains.queries";
 
 export interface IRouteHelpers {
@@ -95,7 +94,7 @@ export class RouteHelpers implements IRouteHelpers {
 
       await this.subdomainQueries.AddSubdomain(
         record,
-        await argon2.hash(token),
+        await Bun.password.hash(token),
       );
 
       logger.info("Added to database");
@@ -165,7 +164,7 @@ export class RouteHelpers implements IRouteHelpers {
 
     if (
       subdomain?.tokenHash &&
-      !(await argon2.verify(subdomain.tokenHash, token))
+      !(await Bun.password.verify(token, subdomain.tokenHash))
     ) {
       return {
         success: false,
@@ -228,7 +227,7 @@ export class RouteHelpers implements IRouteHelpers {
 
     if (
       subdomain?.tokenHash &&
-      !(await argon2.verify(subdomain.tokenHash, token))
+      !(await Bun.password.verify(token, subdomain.tokenHash))
     ) {
       return {
         success: false,

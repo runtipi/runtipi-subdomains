@@ -4,7 +4,6 @@ import * as acme from "acme-client";
 import { ContainerTypes } from "../types/types";
 import { type ICloudflareHelpers } from "./cloudflare.helpers";
 import type { ConfigSchema } from "../schemas/schemas";
-import { string } from "zod";
 
 export interface IAcmeHelpers {
   DNSChallenge(domain: string): Promise<{

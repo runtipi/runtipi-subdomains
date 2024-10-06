@@ -1,0 +1,11 @@
+services:
+  runtipi-subdomains:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: runtipi-subdomains
+    restart: unless-stopped
+    ports:
+      - 80:80
+    volumes:
+      - ./data:/data

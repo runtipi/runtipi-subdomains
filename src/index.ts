@@ -11,7 +11,13 @@ import { db } from "./lib/db/db";
 
 logger.info("Migrating database");
 
-migrate(db, { migrationsFolder: "./src/migrations" });
+var migrationsPath = "./src/migrations";
+
+if (process.env.NODE_ENV === "production") {
+  migrationsPath = "/app/migrations";
+}
+
+migrate(db, { migrationsFolder: migrationsPath });
 
 logger.info("Migrations completed");
 
@@ -31,6 +37,12 @@ setupRoutes(app, routerHelpers);
 
 logger.info("Starting server");
 
-Bun.serve({ fetch: app.fetch, port: 3000 });
+var port = 3000;
 
-logger.info("Server started on port 3000");
+if (process.env.NODE_ENV === "production") {
+  port = 80;
+}
+
+Bun.serve({ fetch: app.fetch, port: port });
+
+logger.info(`Server started on port ${port}`);
