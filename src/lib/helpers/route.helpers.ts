@@ -185,7 +185,7 @@ export class RouteHelpers implements IRouteHelpers {
 
     const recordWildcard = `*.${record}`;
 
-    if (await this.ValidateRecord(record)) {
+    if (!(await this.ValidateRecord(record))) {
       return {
         success: false,
         message: "Records not found",
@@ -236,7 +236,7 @@ export class RouteHelpers implements IRouteHelpers {
 
     const recordWildcard = `*.${record}`;
 
-    if (await this.ValidateRecord(record)) {
+    if (!(await this.ValidateRecord(record))) {
       return {
         success: false,
         message: "Records not found",
@@ -283,7 +283,7 @@ export class RouteHelpers implements IRouteHelpers {
       record = record.replace("*.", "");
     }
 
-    if (await this.ValidateRecord(record)) {
+    if (!(await this.ValidateRecord(record))) {
       return {
         success: false,
         message: "Records not found",
