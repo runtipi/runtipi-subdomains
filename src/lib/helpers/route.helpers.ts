@@ -60,6 +60,45 @@ export class RouteHelpers implements IRouteHelpers {
     private subdomainQueries: ISubdomainQueries,
   ) {}
 
+  private async ValidateRecord(record: string) {
+    logger.info("Checking records");
+
+    logger.info("Checking database");
+
+    if (!(await this.subdomainQueries.GetSubdomain(record))) {
+      logger.info("Record not found in database");
+      return false;
+    }
+
+    logger.info("Record found in database");
+
+    logger.info("Checking Cloudflare");
+
+    if (
+      !(await this.cfHelper.CheckRecordExists(record)) ||
+      !(await this.cfHelper.CheckRecordExists(`*.${record}`))
+    ) {
+      logger.info("Record not found in Cloudflare");
+      return false;
+    }
+
+    logger.info("Record found in Cloudflare");
+
+    logger.info("Checking forbidden records");
+
+    if (
+      forbiddenRecords.includes(record) ||
+      forbiddenRecords.includes(`*.${record}`)
+    ) {
+      logger.info("Record is forbidden");
+      return false;
+    }
+
+    logger.info("Record is not forbidden");
+
+    return true;
+  }
+
   public async CreateRecords(internalIp: string) {
     const baseDomain = await this.cfHelper.GetDomain();
     const name = generate({ exactly: 2, join: "-" });
@@ -146,29 +185,10 @@ export class RouteHelpers implements IRouteHelpers {
 
     const recordWildcard = `*.${record}`;
 
-    logger.info("Checking records");
-
-    if (
-      forbiddenRecords.includes(record) ||
-      forbiddenRecords.includes(recordWildcard)
-    ) {
+    if (await this.ValidateRecord(record)) {
       return {
         success: false,
-        message: "Cannot edit records",
-      };
-    }
-
-    if (!this.cfHelper.CheckRecordExists(record)) {
-      return {
-        success: false,
-        message: `Record ${record} not found`,
-      };
-    }
-
-    if (!this.cfHelper.CheckRecordExists(recordWildcard)) {
-      return {
-        success: false,
-        message: `Record ${recordWildcard} not found`,
+        message: "Records not found",
       };
     }
 
@@ -216,19 +236,7 @@ export class RouteHelpers implements IRouteHelpers {
 
     const recordWildcard = `*.${record}`;
 
-    logger.info("Checking records");
-
-    if (
-      forbiddenRecords.includes(record) ||
-      forbiddenRecords.includes(recordWildcard)
-    ) {
-      return {
-        success: false,
-        message: "Cannot edit records",
-      };
-    }
-
-    if (!this.cfHelper.CheckRecordExists(record)) {
+    if (await this.ValidateRecord(record)) {
       return {
         success: false,
         message: "Records not found",
@@ -256,6 +264,14 @@ export class RouteHelpers implements IRouteHelpers {
     await this.cfHelper.DeleteRecord(record);
     await this.cfHelper.DeleteRecord(recordWildcard);
 
+    logger.info("Records deleted");
+
+    logger.info("Removing from database");
+
+    await this.subdomainQueries.DeleteSubdomain(record);
+
+    logger.info("Removed from database");
+
     return {
       success: true,
       message: "Records deleted",
@@ -267,27 +283,7 @@ export class RouteHelpers implements IRouteHelpers {
       record = record.replace("*.", "");
     }
 
-    const recordWildcard = `*.${record}`;
-
-    logger.info("Checking records");
-
-    if (
-      forbiddenRecords.includes(record) ||
-      forbiddenRecords.includes(recordWildcard)
-    ) {
-      return {
-        success: false,
-        message: "Cannot edit records",
-        data: {
-          subdomain: "",
-          cert: "",
-          key: "",
-          expiration: 0,
-        },
-      };
-    }
-
-    if (!this.cfHelper.CheckRecordExists(record)) {
+    if (await this.ValidateRecord(record)) {
       return {
         success: false,
         message: "Records not found",
@@ -342,7 +338,7 @@ export class RouteHelpers implements IRouteHelpers {
 
     return {
       success: true,
-      message: "Records renewed",
+      message: "Certificates renewed",
       data: {
         subdomain: record,
         cert: cert.data.cert,
