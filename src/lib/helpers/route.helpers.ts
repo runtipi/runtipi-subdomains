@@ -347,4 +347,67 @@ export class RouteHelpers implements IRouteHelpers {
       },
     };
   }
+
+  public async Get(record: string, token: string) {
+    if (record.includes("*")) {
+      record = record.replace("*.", "");
+    }
+
+    if (!(await this.ValidateRecord(record))) {
+      return {
+        success: false,
+        message: "Records not found",
+        data: {
+          subdomain: "",
+          cert: "",
+          key: "",
+          expiration: 0,
+        },
+      };
+    }
+
+    logger.info("Checking token");
+
+    const subdomain = await this.subdomainQueries.GetSubdomain(record);
+
+    if (
+      subdomain?.tokenHash &&
+      !(await Bun.password.verify(token, subdomain.tokenHash))
+    ) {
+      return {
+        success: false,
+        message: "Invalid token",
+        data: {
+          internalIp: "",
+        },
+      };
+    }
+
+    logger.info("Token verified");
+
+    logger.info("Getting records");
+
+    const recordData = await this.cfHelper.GetRecord(record);
+
+    if (!recordData) {
+      logger.error("Failed to get record");
+      return {
+        success: false,
+        message: "Failed to get record",
+        data: {
+          internalIp: "",
+        },
+      };
+    }
+
+    logger.info("Records retrieved");
+
+    return {
+      success: true,
+      message: "Records info",
+      data: {
+        internalIp: recordData.content,
+      },
+    };
+  }
 }

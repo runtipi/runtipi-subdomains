@@ -13,6 +13,7 @@ export interface ICloudflareHelpers {
     name: string,
     value: string,
   ): Promise<{ success: boolean; message: string }>;
+  GetRecord(name: string): Promise<Cloudflare.DNS.Records.Record | null>;
 }
 
 @injectable()
@@ -103,5 +104,17 @@ export class CloudlfareHelpers implements ICloudflareHelpers {
       content: value,
     });
     return { success: true, message: "Record updated" };
+  }
+
+  public async GetRecord(name: string) {
+    const records = await this.cf.dns.records.list({
+      zone_id: this.config.cloudflare.zoneId,
+    });
+    for (const record of records.result) {
+      if (record.name === name) {
+        return record;
+      }
+    }
+    return null;
   }
 }

@@ -10,12 +10,7 @@ export const editSchema = z.object({
   token: z.string(),
 });
 
-export const deleteSchema = z.object({
-  name: z.string(),
-  token: z.string(),
-});
-
-export const renewSchema = z.object({
+export const actionSchema = z.object({
   name: z.string(),
   token: z.string(),
 });
