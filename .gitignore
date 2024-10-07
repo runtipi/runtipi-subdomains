@@ -9,3 +9,6 @@ db.sqlite
 
 # data
 data/
+
+# cache
+cache.json

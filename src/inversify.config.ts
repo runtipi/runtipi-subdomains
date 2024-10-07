@@ -15,6 +15,7 @@ import {
   type ISubdomainQueries,
   SubdomainQueries,
 } from "./lib/queries/subdomains/subdomains.queries";
+import { CacheService, type ICacheService } from "./lib/cache/cache.service";
 
 export function CreateContainer(
   cf: Cloudflare,
@@ -42,6 +43,8 @@ export function CreateContainer(
   container
     .bind<ISubdomainQueries>(ContainerTypes.SubdomainQueries)
     .toConstantValue(subdomainQueries);
+
+  container.bind<ICacheService>(ContainerTypes.Cache).to(CacheService);
 
   return container;
 }

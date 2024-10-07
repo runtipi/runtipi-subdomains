@@ -1,10 +1,38 @@
 import { Hono } from "hono";
-import { actionSchema, createSchema, editSchema } from "./lib/schemas/schemas";
+import {
+  actionSchema,
+  createSchema,
+  editSchema,
+  rateLimitSchema,
+} from "./lib/schemas/schemas";
 import { isIPInRangeOrPrivate } from "range_check";
-import type { RouteHelpers } from "./lib/helpers/route.helpers";
+import { RouteHelpers } from "./lib/helpers/route.helpers";
 import { logger } from "./lib/utils/logger";
+import { getConnInfo } from "hono/bun";
+import type { CacheService } from "./lib/cache/cache.service";
 
-export const setupRoutes = (app: Hono, routerHelpers: RouteHelpers) => {
+export const setupRoutes = (
+  app: Hono,
+  routeHelpers: RouteHelpers,
+  cacheService: CacheService,
+) => {
+  app.use(async (c, next) => {
+    const info = getConnInfo(c);
+    const rateLimitStatus = await routeHelpers.RateLimit(
+      info.remote.address!.toString(),
+    );
+
+    if (rateLimitStatus.rateLimitError) {
+      return c.json({ error: "Rate limit check error" }, 500);
+    }
+
+    if (rateLimitStatus.rateLimit) {
+      return c.json({ error: "Rate limited" }, 429);
+    }
+
+    next();
+  });
+
   app.get("healthcheck", (c) => c.json({ status: "ok" }));
 
   app.post("create", async (c) => {
@@ -26,9 +54,7 @@ export const setupRoutes = (app: Hono, routerHelpers: RouteHelpers) => {
       return c.json({ error: "Invalid IP" }, 400);
     }
 
-    return c.json(
-      await routerHelpers.CreateRecords(parsedBody.data.internalIp),
-    );
+    return c.json(await routeHelpers.CreateRecords(parsedBody.data.internalIp));
   });
 
   app.post("edit", async (c) => {
@@ -51,7 +77,7 @@ export const setupRoutes = (app: Hono, routerHelpers: RouteHelpers) => {
     }
 
     return c.json(
-      await routerHelpers.EditRecord(
+      await routeHelpers.EditRecord(
         parsedBody.data.name,
         parsedBody.data.internalIp,
         parsedBody.data.token,
@@ -73,7 +99,7 @@ export const setupRoutes = (app: Hono, routerHelpers: RouteHelpers) => {
     }
 
     return c.json(
-      await routerHelpers.DeleteRecord(
+      await routeHelpers.DeleteRecord(
         parsedBody.data.name,
         parsedBody.data.token,
       ),
@@ -94,7 +120,7 @@ export const setupRoutes = (app: Hono, routerHelpers: RouteHelpers) => {
     }
 
     return c.json(
-      await routerHelpers.Renew(parsedBody.data.name, parsedBody.data.token),
+      await routeHelpers.Renew(parsedBody.data.name, parsedBody.data.token),
     );
   });
 
@@ -112,7 +138,7 @@ export const setupRoutes = (app: Hono, routerHelpers: RouteHelpers) => {
     }
 
     return c.json(
-      await routerHelpers.Get(parsedBody.data.name, parsedBody.data.token),
+      await routeHelpers.Get(parsedBody.data.name, parsedBody.data.token),
     );
   });
 

@@ -26,4 +26,9 @@ export const configSchema = z.object({
   }),
 });
 
+export const rateLimitSchema = z.object({
+  count: z.number(),
+  expiration: z.number(),
+});
+
 export type ConfigSchema = z.infer<typeof configSchema>;

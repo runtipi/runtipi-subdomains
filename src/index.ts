@@ -3,6 +3,7 @@ import { logger } from "./lib/utils/logger";
 import { setupRoutes } from "./routes";
 import { Hono } from "hono";
 import { RouteHelpers } from "./lib/helpers/route.helpers";
+import { CacheService } from "./lib/cache/cache.service";
 import { CreateContainer } from "./inversify.config";
 import { ContainerTypes } from "./lib/types/types";
 import { Config } from "./lib/config/config";
@@ -33,7 +34,9 @@ const app = new Hono().basePath("/api");
 
 const routerHelpers = container.get<RouteHelpers>(ContainerTypes.RouteHelpers);
 
-setupRoutes(app, routerHelpers);
+const cacheService = container.get<CacheService>(ContainerTypes.Cache);
+
+setupRoutes(app, routerHelpers, cacheService);
 
 logger.info("Starting server");
 

@@ -7,6 +7,8 @@ import type { IAcmeHelpers } from "./acme.helpers";
 import { logger } from "../utils/logger";
 import * as crypto from "crypto";
 import type { ISubdomainQueries } from "../queries/subdomains/subdomains.queries";
+import type { ICacheService } from "../cache/cache.service";
+import { rateLimitSchema } from "../schemas/schemas";
 
 export interface IRouteHelpers {
   CreateRecords(internalIp: string): Promise<{
@@ -58,6 +60,7 @@ export class RouteHelpers implements IRouteHelpers {
     @inject(ContainerTypes.AcmeHelpers) private acmeHelper: IAcmeHelpers,
     @inject(ContainerTypes.SubdomainQueries)
     private subdomainQueries: ISubdomainQueries,
+    @inject(ContainerTypes.Cache) private cacheService: ICacheService,
   ) {}
 
   private async ValidateRecord(record: string) {
@@ -409,5 +412,74 @@ export class RouteHelpers implements IRouteHelpers {
         internalIp: recordData.content,
       },
     };
+  }
+
+  public async RateLimit(ip: string) {
+    logger.info("Getting rate limit from cache");
+
+    const rateLimitInfo = this.cacheService.get(ip);
+
+    if (typeof rateLimitInfo === "undefined") {
+      logger.info("No rate limit info found, setting rate limit info");
+      const date = new Date();
+      date.setHours(date.getHours() + 1);
+      this.cacheService.set(
+        ip,
+        JSON.stringify({ count: 1, expiration: date.getTime() }),
+      );
+      return { rateLimit: false, rateLimitError: false };
+    }
+
+    if (rateLimitInfo) {
+      logger.info("Rate limit foud, parsing");
+
+      var rateLimitJson = {};
+
+      try {
+        rateLimitJson = JSON.parse(rateLimitInfo);
+      } catch (e) {
+        logger.error(`Failed to parse rate limit info: ${e}`);
+        return { rateLimit: false, rateLimitError: true };
+      }
+
+      const rateLimitParsed =
+        await rateLimitSchema.safeParseAsync(rateLimitJson);
+
+      if (rateLimitParsed.error) {
+        logger.error(
+          `Failed to parse rate limit info: ${rateLimitParsed.error}`,
+        );
+        return { rateLimit: false, rateLimitError: true };
+      }
+
+      const currentTime = new Date().getTime();
+
+      if (
+        rateLimitParsed.data.count >= 25 &&
+        currentTime < rateLimitParsed.data.expiration
+      ) {
+        logger.info("Rate limit exceeded");
+        return { rateLimit: true, rateLimitError: false };
+      }
+
+      var expiration = rateLimitParsed.data.expiration;
+
+      if (currentTime > rateLimitParsed.data.expiration) {
+        logger.info("Rate limit expired, resetting");
+        const date = new Date();
+        date.setHours(date.getHours() + 1);
+        expiration = date.getTime();
+      }
+
+      this.cacheService.set(
+        ip,
+        JSON.stringify({
+          count: rateLimitParsed.data.count + 1,
+          expiration: expiration,
+        }),
+      );
+    }
+
+    return { rateLimit: false, rateLimitError: false };
   }
 }

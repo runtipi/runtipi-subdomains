@@ -6,6 +6,7 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "types": ["reflect-metadata", "bun"],
-    "lib": ["es6"]
+    "lib": ["es6"],
+    "esModuleInterop": true
   }
 }

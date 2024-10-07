@@ -3,4 +3,5 @@ export const ContainerTypes = {
   RouteHelpers: Symbol.for("RouteHelpers"),
   AcmeHelpers: Symbol.for("AcmeHelpers"),
   SubdomainQueries: Symbol.for("SubdomainQueries"),
+  Cache: Symbol.for("Cache"),
 };
