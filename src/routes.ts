@@ -1,5 +1,10 @@
 import { Hono } from "hono";
-import { createSchema, deleteSchema, editSchema } from "./lib/schemas/schemas";
+import {
+  createSchema,
+  deleteSchema,
+  editSchema,
+  renewSchema,
+} from "./lib/schemas/schemas";
 import { isIPInRangeOrPrivate } from "range_check";
 import type { RouteHelpers } from "./lib/helpers/route.helpers";
 import { logger } from "./lib/utils/logger";
@@ -77,6 +82,24 @@ export const setupRoutes = (app: Hono, routerHelpers: RouteHelpers) => {
         parsedBody.data.name,
         parsedBody.data.token,
       ),
+    );
+  });
+
+  app.post("renew", async (c) => {
+    const bodyJson = await c.req.json();
+
+    logger.info("Parsing body");
+
+    const parsedBody = await renewSchema.safeParseAsync(bodyJson);
+
+    logger.info("Validating body");
+
+    if (parsedBody.error) {
+      return c.json({ error: "Invalid input" }, 400);
+    }
+
+    return c.json(
+      await routerHelpers.Renew(parsedBody.data.name, parsedBody.data.token),
     );
   });
 

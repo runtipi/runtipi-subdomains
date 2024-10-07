@@ -21,7 +21,7 @@ export interface IRouteHelpers {
     };
   }>;
   EditRecord(
-    name: string,
+    record: string,
     internalIp: string,
     token: string,
   ): Promise<{
@@ -29,11 +29,24 @@ export interface IRouteHelpers {
     message: string;
   }>;
   DeleteRecord(
-    name: string,
+    record: string,
     token: string,
   ): Promise<{
     success: boolean;
     message: string;
+  }>;
+  Renew(
+    record: string,
+    token: string,
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data: {
+      subdomain: string;
+      cert: string;
+      key: string;
+      expiration: number;
+    };
   }>;
 }
 
@@ -211,7 +224,7 @@ export class RouteHelpers implements IRouteHelpers {
     ) {
       return {
         success: false,
-        message: "Cannot delete records",
+        message: "Cannot edit records",
       };
     }
 
@@ -246,6 +259,96 @@ export class RouteHelpers implements IRouteHelpers {
     return {
       success: true,
       message: "Records deleted",
+    };
+  }
+
+  public async Renew(record: string, token: string) {
+    if (record.includes("*")) {
+      record = record.replace("*.", "");
+    }
+
+    const recordWildcard = `*.${record}`;
+
+    logger.info("Checking records");
+
+    if (
+      forbiddenRecords.includes(record) ||
+      forbiddenRecords.includes(recordWildcard)
+    ) {
+      return {
+        success: false,
+        message: "Cannot edit records",
+        data: {
+          subdomain: "",
+          cert: "",
+          key: "",
+          expiration: 0,
+        },
+      };
+    }
+
+    if (!this.cfHelper.CheckRecordExists(record)) {
+      return {
+        success: false,
+        message: "Records not found",
+        data: {
+          subdomain: "",
+          cert: "",
+          key: "",
+          expiration: 0,
+        },
+      };
+    }
+
+    logger.info("Checking token");
+
+    const subdomain = await this.subdomainQueries.GetSubdomain(record);
+
+    if (
+      subdomain?.tokenHash &&
+      !(await Bun.password.verify(token, subdomain.tokenHash))
+    ) {
+      return {
+        success: false,
+        message: "Invalid token",
+        data: {
+          subdomain: "",
+          cert: "",
+          key: "",
+          expiration: 0,
+        },
+      };
+    }
+
+    logger.info("Token verified");
+
+    logger.info("Renewing certs");
+
+    const cert = await this.acmeHelper.DNSChallenge(record);
+
+    if (!cert.success) {
+      logger.error(`Failed to renew certs, error: ${cert.message}`);
+      return {
+        success: false,
+        message: "Failed to renew certificate",
+        data: {
+          subdomain: "",
+          cert: "",
+          key: "",
+          expiration: 0,
+        },
+      };
+    }
+
+    return {
+      success: true,
+      message: "Records renewed",
+      data: {
+        subdomain: record,
+        cert: cert.data.cert,
+        key: cert.data.key,
+        expiration: cert.data.expiration,
+      },
     };
   }
 }

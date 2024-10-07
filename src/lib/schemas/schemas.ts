@@ -15,6 +15,11 @@ export const deleteSchema = z.object({
   token: z.string(),
 });
 
+export const renewSchema = z.object({
+  name: z.string(),
+  token: z.string(),
+});
+
 export const configSchema = z.object({
   cloudflare: z.object({
     zoneId: z.string(),
