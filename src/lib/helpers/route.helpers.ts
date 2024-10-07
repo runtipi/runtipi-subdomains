@@ -414,7 +414,7 @@ export class RouteHelpers implements IRouteHelpers {
     };
   }
 
-  public async RateLimit(ip: string) {
+  public async RateLimit(ip: string, subdomainCheck = false) {
     logger.info("Getting rate limit from cache");
 
     const rateLimitInfo = this.cacheService.get(ip);
@@ -425,13 +425,19 @@ export class RouteHelpers implements IRouteHelpers {
       date.setHours(date.getHours() + 1);
       this.cacheService.set(
         ip,
-        JSON.stringify({ count: 1, expiration: date.getTime() }),
+        JSON.stringify({
+          requests: { count: 1, expiration: date.getTime() },
+          subdomains: {
+            count: subdomainCheck ? 1 : 0,
+            expiration: subdomainCheck ? date.getTime() : 0,
+          },
+        }),
       );
-      return { rateLimit: false, rateLimitError: false };
+      return { rateLimit: false, rateLimitError: false, subdomainLimit: false };
     }
 
     if (rateLimitInfo) {
-      logger.info("Rate limit foud, parsing");
+      logger.info("Rate limit found, parsing");
 
       var rateLimitJson = {};
 
@@ -439,7 +445,11 @@ export class RouteHelpers implements IRouteHelpers {
         rateLimitJson = JSON.parse(rateLimitInfo);
       } catch (e) {
         logger.error(`Failed to parse rate limit info: ${e}`);
-        return { rateLimit: false, rateLimitError: true };
+        return {
+          rateLimit: false,
+          rateLimitError: true,
+          subdomainLimit: false,
+        };
       }
 
       const rateLimitParsed =
@@ -449,37 +459,76 @@ export class RouteHelpers implements IRouteHelpers {
         logger.error(
           `Failed to parse rate limit info: ${rateLimitParsed.error}`,
         );
-        return { rateLimit: false, rateLimitError: true };
+        return {
+          rateLimit: false,
+          rateLimitError: true,
+          subdomainLimit: false,
+        };
       }
 
       const currentTime = new Date().getTime();
 
       if (
-        rateLimitParsed.data.count >= 25 &&
-        currentTime < rateLimitParsed.data.expiration
+        rateLimitParsed.data.requests.count >= 25 &&
+        currentTime < rateLimitParsed.data.requests.expiration
       ) {
         logger.info("Rate limit exceeded");
-        return { rateLimit: true, rateLimitError: false };
+        return { rateLimit: true, rateLimitError: false, subdomainLimit: true };
       }
 
-      var expiration = rateLimitParsed.data.expiration;
+      if (
+        subdomainCheck &&
+        rateLimitParsed.data.subdomains.count >= 5 &&
+        currentTime < rateLimitParsed.data.subdomains.expiration
+      ) {
+        logger.info("Subdomain limit exceeded");
+        return {
+          rateLimit: false,
+          rateLimitError: false,
+          subdomainLimit: true,
+        };
+      }
 
-      if (currentTime > rateLimitParsed.data.expiration) {
+      var requestsExpiration = rateLimitParsed.data.requests.expiration;
+      var requestsCount = rateLimitParsed.data.requests.count;
+
+      if (currentTime > rateLimitParsed.data.requests.expiration) {
         logger.info("Rate limit expired, resetting");
         const date = new Date();
         date.setHours(date.getHours() + 1);
-        expiration = date.getTime();
+        requestsExpiration = date.getTime();
+        requestsCount = 1;
+      }
+
+      var subdomainsExpiration = rateLimitParsed.data.subdomains.expiration;
+      var subdomainsCount = rateLimitParsed.data.subdomains.count;
+
+      if (
+        subdomainCheck &&
+        currentTime > rateLimitParsed.data.subdomains.expiration
+      ) {
+        logger.info("Subdomain limit expired, resetting");
+        const date = new Date();
+        date.setHours(date.getHours() + 2);
+        subdomainsExpiration = date.getTime();
+        subdomainsCount = 1;
       }
 
       this.cacheService.set(
         ip,
         JSON.stringify({
-          count: rateLimitParsed.data.count + 1,
-          expiration: expiration,
+          requests: {
+            count: requestsCount,
+            expiration: requestsExpiration,
+          },
+          subdomains: {
+            count: subdomainsCount,
+            expiration: subdomainsExpiration,
+          },
         }),
       );
     }
 
-    return { rateLimit: false, rateLimitError: false };
+    return { rateLimit: false, rateLimitError: false, subdomainLimit: false };
   }
 }

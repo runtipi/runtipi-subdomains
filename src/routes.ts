@@ -30,13 +30,25 @@ export const setupRoutes = (
       return c.json({ error: "Rate limited" }, 429);
     }
 
-    next();
+    await next();
   });
 
   app.get("healthcheck", (c) => c.json({ status: "ok" }));
 
   app.post("create", async (c) => {
+    const info = getConnInfo(c);
     const bodyJson = await c.req.json();
+    const rateLimitStatus = await routeHelpers.RateLimit(
+      info.remote.address!.toString(),
+      true,
+    );
+
+    if (rateLimitStatus.rateLimitError) {
+      return c.json(
+        { error: "Cannot create more subdomains, rate limited" },
+        429,
+      );
+    }
 
     logger.info("Parsing body");
 
