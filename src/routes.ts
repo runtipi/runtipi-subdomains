@@ -41,6 +41,7 @@ export const setupRoutes = (
     const rateLimitStatus = await routeHelpers.RateLimit(
       info.remote.address!.toString(),
       true,
+      true,
     );
 
     if (rateLimitStatus.rateLimitError) {

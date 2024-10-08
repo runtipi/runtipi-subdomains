@@ -414,7 +414,11 @@ export class RouteHelpers implements IRouteHelpers {
     };
   }
 
-  public async RateLimit(ip: string, subdomainCheck = false) {
+  public async RateLimit(
+    ip: string,
+    subdomainCheck = false,
+    skipLimitIncrease = false,
+  ) {
     logger.info("Getting rate limit from cache");
 
     const rateLimitInfo = this.cacheService.get(ip);
@@ -469,7 +473,7 @@ export class RouteHelpers implements IRouteHelpers {
       const currentTime = new Date().getTime();
 
       if (
-        rateLimitParsed.data.requests.count >= 25 &&
+        rateLimitParsed.data.requests.count >= 50 &&
         currentTime < rateLimitParsed.data.requests.expiration
       ) {
         logger.info("Rate limit exceeded");
@@ -492,6 +496,10 @@ export class RouteHelpers implements IRouteHelpers {
       var requestsExpiration = rateLimitParsed.data.requests.expiration;
       var requestsCount = rateLimitParsed.data.requests.count;
 
+      if (!skipLimitIncrease) {
+        requestsCount++;
+      }
+
       if (currentTime > rateLimitParsed.data.requests.expiration) {
         logger.info("Rate limit expired, resetting");
         const date = new Date();
@@ -502,6 +510,10 @@ export class RouteHelpers implements IRouteHelpers {
 
       var subdomainsExpiration = rateLimitParsed.data.subdomains.expiration;
       var subdomainsCount = rateLimitParsed.data.subdomains.count;
+
+      if (subdomainCheck) {
+        subdomainsCount++;
+      }
 
       if (
         subdomainCheck &&
