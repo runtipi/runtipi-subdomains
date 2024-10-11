@@ -4,7 +4,7 @@ import * as schema from "./schema";
 
 var dbPath = "db.sqlite";
 
-if (process.env.NODE_ENV === "prodcution") {
+if (process.env.NODE_ENV === "production") {
   dbPath = "/data/db.sqlite";
 }
 

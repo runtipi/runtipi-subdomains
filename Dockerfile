@@ -13,7 +13,7 @@ COPY ./src ./src
 
 RUN bun install
 
-ENV NODE_ENV=production
+ENV NODE_ENV production
 
 RUN bun build ./src/index.ts --outdir ./build --minify --target=bun
 
@@ -25,6 +25,6 @@ WORKDIR /app
 COPY --from=builder /app/build/index.js ./index.js
 COPY ./src/migrations ./migrations
 
-ENV NODE_ENV=production
+ENV NODE_ENV production
 
 CMD ["bun", "index.js"]
