@@ -25,6 +25,6 @@ WORKDIR /app
 COPY --from=builder /app/build/index.js ./index.js
 COPY ./src/migrations ./migrations
 
-EXPOSE 80
+ENV NODE_ENV=production
 
 CMD ["bun", "index.js"]
