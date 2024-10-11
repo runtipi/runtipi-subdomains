@@ -1,11 +1,9 @@
 services:
   runtipi-subdomains:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/runtipi/runtipi-subdomains:latest
     container_name: runtipi-subdomains
     restart: unless-stopped
     ports:
-      - 80:80
+      - 80:3000
     volumes:
       - ./data:/data

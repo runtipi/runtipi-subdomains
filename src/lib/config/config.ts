@@ -10,8 +10,19 @@ export class Config {
     }
 
     if (!fs.existsSync(configPath)) {
-      console.error("Config file not found");
-      process.exit(1);
+      var found = false;
+      for (let i = 0; i < 5; i++) {
+        console.log("Waiting for config");
+        if (fs.existsSync(configPath)) {
+          console.log("Config found");
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        console.error("Config not found");
+        process.exit(1);
+      }
     }
 
     const config = fs.readFileSync(configPath, "utf-8");
