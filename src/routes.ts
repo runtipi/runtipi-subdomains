@@ -23,6 +23,8 @@ export const setupRoutes = (
   if (config.rateLimit.enable) {
     app.use(async (c, next) => {
       const info = getConnInfo(c);
+      logger.debug(`Rate limit check for ${info.remote.address!.toString()}`);
+
       const rateLimitStatus = await routeHelpers.RateLimit(
         info.remote.address!.toString(),
       );

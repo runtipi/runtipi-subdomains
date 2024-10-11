@@ -488,6 +488,10 @@ export class RouteHelpers implements IRouteHelpers {
       const rateLimitParsed =
         await rateLimitSchema.safeParseAsync(rateLimitJson);
 
+      logger.debug(
+        `Rate limit parsed: ${JSON.stringify(rateLimitParsed.data)}`,
+      );
+
       if (rateLimitParsed.error) {
         logger.error(
           `Failed to parse rate limit info: ${rateLimitParsed.error}`,

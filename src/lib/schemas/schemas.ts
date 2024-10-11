@@ -30,10 +30,12 @@ export const configSchema = z.object({
   server: z
     .object({
       port: z.number().optional().default(3000),
+      logLevel: z.string().optional().default("error"),
     })
     .optional()
     .default({
       port: 3000,
+      logLevel: "error",
     }),
   jwt: z
     .object({
