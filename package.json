@@ -4,7 +4,8 @@
   "scripts": {
     "dev": "bun run --hot src/index.ts",
     "start": "bun run src/index.ts",
-    "create-account": "bun run tools/createAcmeAccount.ts"
+    "create-account": "bun run tools/createAcmeAccount.ts",
+    "version": "echo $npm_package_version"
   },
   "dependencies": {
     "acme-client": "^5.4.0",
