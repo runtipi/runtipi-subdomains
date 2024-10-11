@@ -50,6 +50,26 @@ export interface IRouteHelpers {
       expiration: number;
     };
   }>;
+  Get(
+    record: string,
+    token: string,
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data: {
+      internalIp: string;
+    };
+  }>;
+  RateLimit(
+    ip: string,
+    subdomainCheck?: boolean,
+    skipLimitIncrease?: boolean,
+  ): Promise<{
+    rateLimit: boolean;
+    rateLimitError: boolean;
+    subdomainLimit: boolean;
+    expiration: number;
+  }>;
 }
 
 @injectable()
@@ -365,10 +385,7 @@ export class RouteHelpers implements IRouteHelpers {
         success: false,
         message: "Records not found",
         data: {
-          subdomain: "",
-          cert: "",
-          key: "",
-          expiration: 0,
+          internalIp: "",
         },
       };
     }
@@ -413,7 +430,7 @@ export class RouteHelpers implements IRouteHelpers {
       success: true,
       message: "Records info",
       data: {
-        internalIp: recordData.content,
+        internalIp: String(recordData.content),
       },
     };
   }
@@ -443,7 +460,12 @@ export class RouteHelpers implements IRouteHelpers {
           },
         }),
       );
-      return { rateLimit: false, rateLimitError: false, subdomainLimit: false };
+      return {
+        rateLimit: false,
+        rateLimitError: false,
+        subdomainLimit: false,
+        expiration: 0,
+      };
     }
 
     if (rateLimitInfo) {
@@ -459,6 +481,7 @@ export class RouteHelpers implements IRouteHelpers {
           rateLimit: false,
           rateLimitError: true,
           subdomainLimit: false,
+          expiration: 0,
         };
       }
 
@@ -473,6 +496,7 @@ export class RouteHelpers implements IRouteHelpers {
           rateLimit: false,
           rateLimitError: true,
           subdomainLimit: false,
+          expiration: 0,
         };
       }
 
@@ -483,7 +507,12 @@ export class RouteHelpers implements IRouteHelpers {
         currentTime < rateLimitParsed.data.requests.expiration
       ) {
         logger.info("Rate limit exceeded");
-        return { rateLimit: true, rateLimitError: false, subdomainLimit: true };
+        return {
+          rateLimit: true,
+          rateLimitError: false,
+          subdomainLimit: false,
+          expiration: rateLimitParsed.data.requests.expiration,
+        };
       }
 
       if (
@@ -497,6 +526,7 @@ export class RouteHelpers implements IRouteHelpers {
           rateLimit: false,
           rateLimitError: false,
           subdomainLimit: true,
+          expiration: rateLimitParsed.data.subdomains.expiration,
         };
       }
 
@@ -552,6 +582,11 @@ export class RouteHelpers implements IRouteHelpers {
       );
     }
 
-    return { rateLimit: false, rateLimitError: false, subdomainLimit: false };
+    return {
+      rateLimit: false,
+      rateLimitError: false,
+      subdomainLimit: false,
+      expiration: 0,
+    };
   }
 }

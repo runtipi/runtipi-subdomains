@@ -32,6 +32,10 @@ export const setupRoutes = (
       }
 
       if (rateLimitStatus.rateLimit) {
+        c.res.headers.set(
+          "Retry-After",
+          String(rateLimitStatus.expiration / 1000),
+        );
         return c.json({ error: "Rate limited" }, 429);
       }
 
@@ -53,6 +57,10 @@ export const setupRoutes = (
       );
 
       if (rateLimitStatus.rateLimitError) {
+        c.res.headers.set(
+          "Retry-After",
+          String(rateLimitStatus.expiration / 1000),
+        );
         return c.json(
           { error: "Cannot create more subdomains, rate limited" },
           429,
