@@ -11,13 +11,14 @@ export class Config {
 
     if (!fs.existsSync(configPath)) {
       var found = false;
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < 10; i++) {
         console.log("Waiting for config");
         if (fs.existsSync(configPath)) {
           console.log("Config found");
           found = true;
           break;
         }
+        new Promise((r) => setTimeout(r, 2000)).then(() => {});
       }
       if (!found) {
         console.error("Config not found");
