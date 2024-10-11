@@ -1,4 +1,4 @@
-name: Publish release
+name: Release
 on:
   workflow_dispatch:
 
@@ -49,7 +49,7 @@ jobs:
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/runtipi-subdomains:${{ needs.create-tag.outputs.tagname }},ghcr.io/${{ github.repository_owner }}/runtipi-subdomains:latest
 
-  publish-release:
+  release:
     runs-on: ubuntu-latest
     needs: [create-tag, build-image]
     steps:
