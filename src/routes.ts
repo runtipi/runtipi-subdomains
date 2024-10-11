@@ -1,54 +1,63 @@
 import { Hono } from "hono";
+import { jwt } from "hono/jwt";
 import {
   actionSchema,
+  ConfigSchema,
   createSchema,
   editSchema,
-  rateLimitSchema,
 } from "./lib/schemas/schemas";
 import { isIPInRangeOrPrivate } from "range_check";
 import { RouteHelpers } from "./lib/helpers/route.helpers";
 import { logger } from "./lib/utils/logger";
 import { getConnInfo } from "hono/bun";
-import type { CacheService } from "./lib/cache/cache.service";
 
 export const setupRoutes = (
   app: Hono,
   routeHelpers: RouteHelpers,
-  cacheService: CacheService,
+  config: ConfigSchema,
 ) => {
-  app.use(async (c, next) => {
-    const info = getConnInfo(c);
-    const rateLimitStatus = await routeHelpers.RateLimit(
-      info.remote.address!.toString(),
-    );
+  if (config.jwt.enable) {
+    app.use("*", jwt({ secret: config.jwt.secret }));
+  }
 
-    if (rateLimitStatus.rateLimitError) {
-      return c.json({ error: "Rate limit check error" }, 500);
-    }
+  if (config.rateLimit.enable) {
+    app.use(async (c, next) => {
+      const info = getConnInfo(c);
+      const rateLimitStatus = await routeHelpers.RateLimit(
+        info.remote.address!.toString(),
+      );
 
-    if (rateLimitStatus.rateLimit) {
-      return c.json({ error: "Rate limited" }, 429);
-    }
+      if (rateLimitStatus.rateLimitError) {
+        return c.json({ error: "Rate limit check error" }, 500);
+      }
 
-    await next();
-  });
+      if (rateLimitStatus.rateLimit) {
+        return c.json({ error: "Rate limited" }, 429);
+      }
+
+      await next();
+    });
+  }
 
   app.get("healthcheck", (c) => c.json({ status: "ok" }));
 
   app.post("create", async (c) => {
     const info = getConnInfo(c);
     const bodyJson = await c.req.json();
-    const rateLimitStatus = await routeHelpers.RateLimit(
-      info.remote.address!.toString(),
-      true,
-      true,
-    );
 
-    if (rateLimitStatus.rateLimitError) {
-      return c.json(
-        { error: "Cannot create more subdomains, rate limited" },
-        429,
+    if (config.rateLimit.enable) {
+      const rateLimitStatus = await routeHelpers.RateLimit(
+        info.remote.address!.toString(),
+        true,
+        true,
       );
+
+      if (rateLimitStatus.rateLimitError) {
+        return c.json(
+          { error: "Cannot create more subdomains, rate limited" },
+          429,
+        );
+      }
     }
 
     logger.info("Parsing body");

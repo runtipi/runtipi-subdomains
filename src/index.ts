@@ -36,16 +36,10 @@ const routerHelpers = container.get<RouteHelpers>(ContainerTypes.RouteHelpers);
 
 const cacheService = container.get<CacheService>(ContainerTypes.Cache);
 
-setupRoutes(app, routerHelpers, cacheService);
+setupRoutes(app, routerHelpers, config);
 
 logger.info("Starting server");
 
-var port = 3000;
+Bun.serve({ fetch: app.fetch, port: config.server.port });
 
-if (process.env.NODE_ENV === "production") {
-  port = 80;
-}
-
-Bun.serve({ fetch: app.fetch, port: port });
-
-logger.info(`Server started on port ${port}`);
+logger.info(`Server started on port ${config.server.port}`);

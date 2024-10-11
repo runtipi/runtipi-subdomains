@@ -4,7 +4,24 @@
     "apiToken": "some-api-token"
   },
   "acme": {
-    "accountUrl": "some-account-url",
-    "accountKey": "some-private-key-use-private-key-to-json-script"
+    "accountUrl": "https://acme-v02.api.letsencrypt.org/acme/acct/1984041017",
+    "accountKey": "some-account-key-use-create-account-script"
+  },
+  "server": {
+    "port": 3000
+  },
+  "jwt": {
+    "enable": false,
+    "secret": "somesecret"
+  },
+  "rateLimit": {
+    "enable": true,
+    "apiLimit": 50,
+    "apiLimitExpiration": 60,
+    "subdomaimLimit": 5,
+    "subdomainLimitExpiration": 120
+  },
+  "restrictions": {
+    "restrictedRecords": ["runtipi.io"]
   }
 }

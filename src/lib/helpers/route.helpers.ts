@@ -2,13 +2,13 @@ import type { ICloudflareHelpers } from "./cloudflare.helpers";
 import { generate } from "random-words";
 import { inject, injectable } from "inversify";
 import { ContainerTypes } from "../types/types";
-import { forbiddenRecords } from "../constants/constats";
 import type { IAcmeHelpers } from "./acme.helpers";
 import { logger } from "../utils/logger";
 import * as crypto from "crypto";
 import type { ISubdomainQueries } from "../queries/subdomains/subdomains.queries";
 import type { ICacheService } from "../cache/cache.service";
-import { rateLimitSchema } from "../schemas/schemas";
+import { ConfigSchema, rateLimitSchema } from "../schemas/schemas";
+import { Config } from "../config/config";
 
 export interface IRouteHelpers {
   CreateRecords(internalIp: string): Promise<{
@@ -54,6 +54,8 @@ export interface IRouteHelpers {
 
 @injectable()
 export class RouteHelpers implements IRouteHelpers {
+  private config: ConfigSchema;
+
   constructor(
     @inject(ContainerTypes.CloudflareHelpers)
     private cfHelper: ICloudflareHelpers,
@@ -61,7 +63,9 @@ export class RouteHelpers implements IRouteHelpers {
     @inject(ContainerTypes.SubdomainQueries)
     private subdomainQueries: ISubdomainQueries,
     @inject(ContainerTypes.Cache) private cacheService: ICacheService,
-  ) {}
+  ) {
+    this.config = new Config().getConfig();
+  }
 
   private async ValidateRecord(record: string) {
     logger.info("Checking records");
@@ -90,8 +94,8 @@ export class RouteHelpers implements IRouteHelpers {
     logger.info("Checking forbidden records");
 
     if (
-      forbiddenRecords.includes(record) ||
-      forbiddenRecords.includes(`*.${record}`)
+      this.config.restricted.restrictedRecords.includes(record) ||
+      this.config.restricted.restrictedRecords.includes(`*.${record}`)
     ) {
       logger.info("Record is forbidden");
       return false;
@@ -426,7 +430,9 @@ export class RouteHelpers implements IRouteHelpers {
     if (typeof rateLimitInfo === "undefined") {
       logger.info("No rate limit info found, setting rate limit info");
       const date = new Date();
-      date.setHours(date.getHours() + 1);
+      date.setHours(
+        date.getMinutes() + this.config.rateLimit.apiLimitExpiration,
+      );
       this.cacheService.set(
         ip,
         JSON.stringify({
@@ -473,7 +479,7 @@ export class RouteHelpers implements IRouteHelpers {
       const currentTime = new Date().getTime();
 
       if (
-        rateLimitParsed.data.requests.count >= 50 &&
+        rateLimitParsed.data.requests.count >= this.config.rateLimit.apiLimit &&
         currentTime < rateLimitParsed.data.requests.expiration
       ) {
         logger.info("Rate limit exceeded");
@@ -482,7 +488,8 @@ export class RouteHelpers implements IRouteHelpers {
 
       if (
         subdomainCheck &&
-        rateLimitParsed.data.subdomains.count >= 5 &&
+        rateLimitParsed.data.subdomains.count >=
+          this.config.rateLimit.subdomainLimit &&
         currentTime < rateLimitParsed.data.subdomains.expiration
       ) {
         logger.info("Subdomain limit exceeded");
@@ -503,7 +510,9 @@ export class RouteHelpers implements IRouteHelpers {
       if (currentTime > rateLimitParsed.data.requests.expiration) {
         logger.info("Rate limit expired, resetting");
         const date = new Date();
-        date.setHours(date.getHours() + 1);
+        date.setHours(
+          date.getHours() + this.config.rateLimit.apiLimitExpiration,
+        );
         requestsExpiration = date.getTime();
         requestsCount = 1;
       }
@@ -521,7 +530,9 @@ export class RouteHelpers implements IRouteHelpers {
       ) {
         logger.info("Subdomain limit expired, resetting");
         const date = new Date();
-        date.setHours(date.getHours() + 2);
+        date.setHours(
+          date.getHours() + this.config.rateLimit.subdomainLimitExpiration,
+        );
         subdomainsExpiration = date.getTime();
         subdomainsCount = 1;
       }
